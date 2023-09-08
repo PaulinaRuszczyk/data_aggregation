@@ -33,10 +33,10 @@ std::pair<std::string, std::string> CDataBase::getCredentials(){
     if(!credentialsFile.is_open())
         throw  std::runtime_error("Cannot find credentials file. ");
     getline (credentialsFile, keys);
-    std::string accessKey= keys.substr(keys.find(':')+1, keys.find('\n'));
+    std::string accessKey= keys.substr(keys.find("accessKeyId:")+12, keys.find('\n'));
 
     getline (credentialsFile, keys);
-    std::string secretKey= keys.substr(keys.find(':')+1, keys.find('\n'));
+    std::string secretKey= keys.substr(keys.find("secretKey:")+10, keys.find('\n'));
     return std::make_pair(accessKey, secretKey);
 };
 

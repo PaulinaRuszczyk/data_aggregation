@@ -5,7 +5,7 @@ project(Castorama)
 #find_package(SQLite3 REQUIRED)
 find_library(SQLITE3_LIBRARY sqlite3)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_PREFIX_PATH "/home/pulinka/sdk_build/lib")
+set(CMAKE_PREFIX_PATH "~/sdk_build/lib")
 
 add_executable(Castorama main.cpp CRequest.cpp CRequest.h CDataBase.cpp CDataBase.h)
 

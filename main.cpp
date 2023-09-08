@@ -24,7 +24,7 @@ int main() {
 
         for (const auto &vId: vIds) {
             Aws::DynamoDB::Model::PutItemRequest putItemRequest;
-            putItemRequest.SetTableName("quantities");  // Replace with your table name
+            putItemRequest.SetTableName("quantities");
             putItemRequest.AddItem("lp", Aws::DynamoDB::Model::AttributeValue().SetS(std::to_string(i)));
             putItemRequest.AddItem("id", Aws::DynamoDB::Model::AttributeValue().SetS(vId));
 

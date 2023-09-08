@@ -1,16 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(Castorama)
 
-# Find the sqlite3 library
-#find_package(SQLite3 REQUIRED)
-find_library(SQLITE3_LIBRARY sqlite3)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_PREFIX_PATH "~/sdk_build/lib")
 
 add_executable(Castorama main.cpp CRequest.cpp CRequest.h CDataBase.cpp CDataBase.h)
-
-# Link your target with the sqlite3 library
-target_link_libraries(Castorama -lsqlite3)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 

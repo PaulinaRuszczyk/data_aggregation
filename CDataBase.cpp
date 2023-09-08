@@ -64,7 +64,7 @@ std::vector<std::string> CDataBase::GetIds(){
 }
 int CDataBase::GetHighestLp() {
     Aws::DynamoDB::Model::ScanRequest scanQuantityRequest;
-    scanQuantityRequest.SetTableName("test");
+    scanQuantityRequest.SetTableName("quantity");
 
     int i;
     const Aws::DynamoDB::Model::ScanOutcome& outcomeOfQuantity = m_dynamoClient->Scan(scanQuantityRequest);

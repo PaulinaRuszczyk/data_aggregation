@@ -6,7 +6,7 @@ Software that collects and stores data on the inventory of individual products i
    * CMake Minimum version 3.13
    * DynamoDB database
 # Configuration
-Software is configured using Credentials.env file containing fields: 
+Software is configured using Credentials.env file located in build folder containing fields: 
 
 ```accessKeyId:YourAwsAccessKey```
 

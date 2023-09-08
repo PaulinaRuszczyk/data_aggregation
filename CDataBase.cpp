@@ -1,60 +1,80 @@
-//
-// Created by pulinka on 8/13/23.
-//
-
+#include <fstream>
+#include <aws/dynamodb/model/ScanRequest.h>
 #include "CDataBase.h"
 
-CDataBase::CDataBase(std::string DBname):
-        m_sDataBaseName(std::move(DBname))
+#include <stdexcept>
+#include <aws/core/Aws.h>
+#include <aws/core/utils/Outcome.h>
+#include <aws/core/utils/logging/AWSLogging.h>
+
+#include <aws/dynamodb/DynamoDBClient.h>
+#include <aws/core/client/ClientConfiguration.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
+
+
+CDataBase::CDataBase()
 {
-    int rc;
-    rc = sqlite3_open(m_sDataBaseName.c_str(), &m_Database);
-    if (rc) {
-        sqlite3_close(m_Database);
-        throw std::runtime_error("Database Open failed!");
-    }
-}
-void CDataBase::InsertData(const char *sql_insert){
-    int rc;
-    char *zErrMsg = 0;
-    rc = sqlite3_exec(m_Database, sql_insert, 0, 0, &zErrMsg);
-
-    if (rc != SQLITE_OK) {
-        sqlite3_free(zErrMsg);
-        throw std::runtime_error("SQL error: " + std::string(zErrMsg));
-    } else {
-        std::cout << "Record inserted successfully" << std::endl;
-    }
-
+    std::pair <std::string, std::string> keys =getCredentials();
+    Aws::Auth::AWSCredentials credentials(keys.first, keys.second);
+    Aws::InitAPI( m_options);
+    Aws::Client::ClientConfiguration clientConfiguration;
+    clientConfiguration.region = "eu-north-1";// Change to your desired region
+    m_dynamoClient=new Aws::DynamoDB::DynamoDBClient(credentials, clientConfiguration);
 }
 
-std::vector<std::string> CDataBase::GetIds(const char *sql_select){
-    int rc;
-    char *zErrMsg = 0;
-    std::string result;
-    std::vector<std::string> words;
-    rc = sqlite3_exec(m_Database, sql_select, [](void *data, int argc, char **argv, char **azColName) -> int {
-        auto* result = static_cast<std::string *>(data);
-        std::vector<std::string> temp;
-        for(int i = 0; i < argc; i++) {
-            if(std::string(azColName[i])=="id") {
-                *result += argv[i];
-                *result += "\n";
-            }
+CDataBase::~CDataBase() {
+    Aws::ShutdownAPI( m_options);
+}
+
+std::pair<std::string, std::string> CDataBase::getCredentials(){
+
+    std::ifstream credentialsFile("Credentials.env");
+    std::string keys;
+    if(!credentialsFile.is_open())
+        throw  std::runtime_error("Cannot find credentials file. ");
+    getline (credentialsFile, keys);
+    std::string accessKey= keys.substr(keys.find(':')+1, keys.find('\n'));
+
+    getline (credentialsFile, keys);
+    std::string secretKey= keys.substr(keys.find(':')+1, keys.find('\n'));
+    return std::make_pair(accessKey, secretKey);
+};
+
+std::vector<std::string> CDataBase::GetIds(){
+    std::vector <std::string> vIds;
+    Aws::DynamoDB::Model::ScanRequest scanRequest;
+    scanRequest.SetTableName("names");
+    const Aws::DynamoDB::Model::ScanOutcome& outcome = m_dynamoClient->Scan(scanRequest);
+
+    if (outcome.IsSuccess()) {
+        const auto& items = outcome.GetResult().GetItems();
+
+        for (const auto& item : items) {
+            auto nameValue = item.find("id");
+            if (nameValue != item.end())
+                vIds.push_back(nameValue->second.GetS());
         }
-        return 0;
-    }, &result, &zErrMsg);
-
-    if (rc != SQLITE_OK) {
-        sqlite3_free(zErrMsg);
-        throw std::runtime_error("SQL error: "+std::string(zErrMsg));
+    } else {
+        throw std::runtime_error("Unable to connect to Data Base. Try again later!"+outcome.GetError().GetMessage());
     }
+    return vIds;
+}
+int CDataBase::GetHighestLp() {
+    Aws::DynamoDB::Model::ScanRequest scanQuantityRequest;
+    scanQuantityRequest.SetTableName("test");
 
-    while(result.find( '\n')!=std::string::npos){
-        std::string tmp= result.substr(0, result.find('\n'));
-        words.push_back( tmp);
-        result.replace(0,result.find('\n')+1,"");
-    }
-
-    return words;
+    int i;
+    const Aws::DynamoDB::Model::ScanOutcome& outcomeOfQuantity = m_dynamoClient->Scan(scanQuantityRequest);
+    if (outcomeOfQuantity.IsSuccess()) {
+        const auto& items = outcomeOfQuantity.GetResult().GetItems();
+        std::vector<int> lp;
+        for (const auto& item : items) {
+            auto nameValue = item.find("lp");
+            if (nameValue != item.end())
+                lp.push_back(std::stoi(nameValue->second.GetS().c_str()));
+        }
+        lp.empty() ?  i=0 : i = *max_element(std::begin(lp), std::end(lp))+1;
+    } else {
+        throw std::runtime_error("Unable to connect to Data Base. Try again later!"+outcomeOfQuantity.GetError().GetMessage());    }
+    return i;
 }

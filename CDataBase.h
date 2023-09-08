@@ -7,24 +7,22 @@
 
 #include <iostream>
 #include <vector>
-#include "sqlite3.h"
+#include <aws/core/Aws.h>
+#include <aws/dynamodb/DynamoDBClient.h>
 
 
 class CDataBase{
-    std::string m_sDataBaseName;
-    sqlite3 *m_Database;
+    Aws::SDKOptions m_options;
+    static std::pair<std::string, std::string> getCredentials();
 public:
-    CDataBase(std::string DBname);
+    Aws::DynamoDB::DynamoDBClient *m_dynamoClient;
 
-    ~CDataBase() {
-        sqlite3_close(m_Database);
-    }
+    CDataBase();
+    ~CDataBase();
 
-    void InsertData(const char *sql_insert);
+    std::vector<std::string> GetIds();
+    int GetHighestLp();
 
-    std::vector<std::string> GetIds(const char *sql_select);
-
-private:
 };
 
 

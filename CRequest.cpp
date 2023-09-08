@@ -1,9 +1,7 @@
-//
-// Created by pulinka on 8/13/23.
-//
 
 #include <stdexcept>
 #include <memory>
+#include <iostream>
 #include "CRequest.h"
 
 int CRequest::retriveData(const std::string& identNumber) {
@@ -38,7 +36,8 @@ int CRequest::retriveData(const std::string& identNumber) {
         }
         return quantity;
     }
-    catch (...) {
-        return NULL;
+    catch (std::runtime_error& e) {
+        std::cout<<"Cannot connect to castorama "<<e.what();
+        return 0;
     }
 }

@@ -5,28 +5,50 @@
 #include "CRequest.h"
 #include "CDataBase.h"
 
+#include <aws/core/utils/Outcome.h>
+#include <aws/core/utils/logging/AWSLogging.h>
+
+#include <aws/dynamodb/model/GetItemRequest.h>
+#include <aws/dynamodb/model/PutItemRequest.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/dynamodb/model/ScanRequest.h>
+
 int main() {
-    CRequest request;
 
-    CDataBase DB("/home/pulinka/Desktop/cpp/Castorama/itemki.db");
-    std::vector<std::string> vIds;
-
+    CDataBase *dataBase;
     try {
-        vIds = DB.GetIds("SELECT * FROM names;");
-    }
-    catch (std::runtime_error &e) {
-        std::cout << "Insert error: " << e.what();
-    }
+        dataBase = new CDataBase();
+        std::vector<std::string> vIds = dataBase->GetIds();
 
-    for (const auto & vId : vIds) {
-        std::string sql_insert;
-        if(request.retriveData(vId)!=NULL)
-            sql_insert = "INSERT INTO quantity(id, quantity, date) VALUES (" + vId + ", " +
-                                 std::to_string(request.retriveData(vId)) + ", strftime ('%s', 'now'));";
-        else
-            sql_insert = "INSERT INTO quantity(id, quantity, date) VALUES (" + vId + ", NULL,  strftime ('%s', 'now'));";
+        int i = dataBase->GetHighestLp();
 
-        DB.InsertData(sql_insert.c_str());
-        std::cout << "id " << vId << " quantity " << request.retriveData(vId) << std::endl;
-    }
+        for (const auto &vId: vIds) {
+            Aws::DynamoDB::Model::PutItemRequest putItemRequest;
+            putItemRequest.SetTableName("test");  // Replace with your table name
+            putItemRequest.AddItem("lp", Aws::DynamoDB::Model::AttributeValue().SetS(std::to_string(i)));
+            putItemRequest.AddItem("id", Aws::DynamoDB::Model::AttributeValue().SetS(vId));
+
+            if (CRequest::retriveData(vId) == NULL)
+                putItemRequest.AddItem("quantity", Aws::DynamoDB::Model::AttributeValue().SetS("NULL"));
+            else
+                putItemRequest.AddItem("quantity", Aws::DynamoDB::Model::AttributeValue().SetS(
+                        std::to_string(CRequest::retriveData(vId))));
+
+            std::time_t currentTime = std::time(nullptr);
+            putItemRequest.AddItem("date", Aws::DynamoDB::Model::AttributeValue().SetS(std::to_string(currentTime)));
+
+            const Aws::DynamoDB::Model::PutItemOutcome outcome = dataBase->m_dynamoClient->PutItem(putItemRequest);
+            i++;
+
+            if (outcome.IsSuccess()) {
+                std::cout << "Successfully added Item!" << std::endl;
+            } else {
+                std::cerr << "Failed to add item: " << outcome.GetError().GetMessage() << std::endl;
+            }
+        }
+    }catch (std::runtime_error& e) {
+        std::cout << e.what();
+         }
+
+    return 0;
 }

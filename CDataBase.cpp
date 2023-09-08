@@ -29,9 +29,7 @@ CDataBase::~CDataBase() {
 
 std::pair<std::string, std::string> CDataBase::getCredentials(){
 
-    std::filesystem::path currentDir = std::filesystem::current_path();
-    std::filesystem::path filePath = currentDir / "Credentials.env";
-    std::ifstream credentialsFile(filePath);
+    std::ifstream credentialsFile("Credentials.env");
     std::string keys;
     if(!credentialsFile.is_open())
         throw  std::runtime_error("Cannot find credentials file. ");
@@ -64,7 +62,7 @@ std::vector<std::string> CDataBase::GetIds(){
 }
 int CDataBase::GetHighestLp() {
     Aws::DynamoDB::Model::ScanRequest scanQuantityRequest;
-    scanQuantityRequest.SetTableName("quantity");
+    scanQuantityRequest.SetTableName("quantities");
 
     int i;
     const Aws::DynamoDB::Model::ScanOutcome& outcomeOfQuantity = m_dynamoClient->Scan(scanQuantityRequest);
